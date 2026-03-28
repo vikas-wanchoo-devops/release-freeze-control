@@ -1,3 +1,10 @@
+name: Notify Freeze Change
+
+on:
+  push:
+    paths:
+      - "code-freeze-config/freeze.json"
+
 jobs:
   notify:
     runs-on: ubuntu-latest

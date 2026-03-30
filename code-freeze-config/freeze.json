@@ -1,4 +1,4 @@
 {
-  "freeze_active": false,
-  "reason": "Release window until March 31."
+  "freeze_active": true,
+  "reason": "Release window until March 31"
 }

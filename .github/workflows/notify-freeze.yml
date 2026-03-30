@@ -11,7 +11,9 @@ jobs:
     steps:
       - name: Trigger downstream repos
         run: |
-          for repo in FlaskAPI-Docker-CICD AnotherRepo YetAnotherRepo; do
+          # Replace with the actual downstream repos you want to notify
+          for repo in FlaskAPI-Docker-CICD ServiceA ServiceB; do
+            echo "Dispatching freeze-updated event to $repo..."
             curl -X POST \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \

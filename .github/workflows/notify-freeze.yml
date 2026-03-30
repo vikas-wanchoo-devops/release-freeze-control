@@ -17,3 +17,23 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             https://api.github.com/repos/vikas-wanchoo-devops/FlaskAPI-Docker-CICD/dispatches \
             -d '{"event_type":"freeze-updated"}'
+
+  recheck-open-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-trigger checks on open PRs
+        run: |
+          repo="FlaskAPI-Docker-CICD"
+          echo "Fetching open PRs for $repo"
+          prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
+
+          for pr in $prs; do
+            echo "Re-dispatching freeze check for PR #$pr in $repo"
+            curl -X POST \
+              -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/actions/workflows/code-freeze.yml/dispatches \
+              -d "{\"ref\":\"develop\"}"
+          done

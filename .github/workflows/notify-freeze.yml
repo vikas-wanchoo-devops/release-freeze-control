@@ -9,19 +9,15 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger downstream repo
+      - name: Dispatch freeze-updated event
         run: |
-          echo "Dispatching freeze-updated event to FlaskAPI-Docker-CICD..."
           curl -X POST \
-            -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/vikas-wanchoo-devops/FlaskAPI-Docker-CICD/dispatches \
             -d '{"event_type":"freeze-updated"}'
 
-  recheck-open-prs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Re-trigger checks on open PRs
+      - name: Re-run checks on open PRs
         run: |
           repo="FlaskAPI-Docker-CICD"
           prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
@@ -29,11 +25,11 @@ jobs:
             https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
 
           for pr in $prs; do
-            echo "Re-requesting checks for PR #$pr in $repo"
             sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr | jq -r '.head.sha')
 
+            echo "Re-running Code Freeze Check for PR #$pr ($sha)"
             curl -X POST \
               -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \

@@ -20,24 +20,29 @@ jobs:
 
   recheck-open-prs:
     runs-on: ubuntu-latest
-    needs: notify
+    needs: notify   # ensures this runs after notify
     steps:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Wait for downstream workflows
         run: |
-          echo "Sleeping for 30 seconds to allow downstream workflows to complete..."
-          sleep 30
+          echo "Sleeping for 10 seconds to allow downstream workflows to complete..."
+          sleep 10
 
       - name: Re-request Code Freeze checks on open PRs
         run: |
           repo="FlaskAPI-Docker-CICD"
+          echo "Fetching open PRs for $repo..."
+
           prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
 
           for pr in $prs; do
+            echo "--------------------------------------"
+            echo "Processing PR #$pr..."
+
             sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr | jq -r '.head.sha')

@@ -2,7 +2,6 @@
 
 [![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD%20Pipeline-passing-brightgreen)]()
 [![Code Freeze Check](https://img.shields.io/badge/Code%20Freeze%20Check-passing-brightgreen)]()
-[![Docker Pulls](https://img.shields.io/badge/docker%20pulls-1.8k-blue)]()
 [![Stars](https://img.shields.io/badge/stars-1-white)]()
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)]()
 

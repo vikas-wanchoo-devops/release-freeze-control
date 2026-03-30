@@ -21,27 +21,48 @@ jobs:
   recheck-open-prs:
     runs-on: ubuntu-latest
     steps:
-      - name: Re-request checks on open PRs
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Re-request Code Freeze checks on open PRs
         run: |
           repo="FlaskAPI-Docker-CICD"
           echo "Fetching open PRs for $repo..."
+
           prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
 
           for pr in $prs; do
+            echo "--------------------------------------"
+            echo "Processing PR #$pr..."
+
             sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr | jq -r '.head.sha')
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr \
+              | jq -r '.head.sha')
 
-            suite_id=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-              -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-suites \
-              | jq -r '.check_suites[0].id')
+            echo "Latest SHA: $sha"
 
-            echo "Re-requesting check suite $suite_id for PR #$pr ($sha)"
-            curl -X POST \
-              -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            check_run_id=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/check-suites/$suite_id/rerequest
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-runs \
+              | jq -r '.check_runs[]
+                | select(.name=="Code Freeze Check / check-freeze (pull_request)")
+                | .id')
+
+            if [ -n "$check_run_id" ] && [ "$check_run_id" != "null" ]; then
+              echo "Re-running check-run $check_run_id for PR #$pr"
+              curl -X POST \
+                -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                https://api.github.com/repos/vikas-wanchoo-devops/$repo/check-runs/$check_run_id/rerequest
+            else
+              echo "No matching Code Freeze check found for PR #$pr"
+              echo "Available checks:"
+              curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-runs \
+                | jq -r '.check_runs[].name'
+            fi
           done

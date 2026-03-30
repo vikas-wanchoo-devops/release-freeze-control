@@ -2,7 +2,7 @@
 
 [![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD%20Pipeline-passing-brightgreen)]()
 [![Code Freeze Check](https://img.shields.io/badge/Code%20Freeze%20Check-passing-brightgreen)]()
-[![Stars](https://img.shields.io/badge/stars-1-white)]()
+![GitHub Repo stars](https://img.shields.io/github/stars/vikas-wanchoo-devops/release-freeze-control?style=social&cacheSeconds=60&timestamp=20260304)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)]()
 
 ---

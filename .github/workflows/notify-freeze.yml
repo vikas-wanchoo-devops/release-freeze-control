@@ -21,7 +21,7 @@ jobs:
   recheck-open-prs:
     runs-on: ubuntu-latest
     steps:
-      - name: Re-run checks on open PRs
+      - name: Re-request checks on open PRs
         run: |
           repo="FlaskAPI-Docker-CICD"
           echo "Fetching open PRs for $repo..."
@@ -30,10 +30,18 @@ jobs:
             https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
 
           for pr in $prs; do
-            echo "Re-running Code Freeze Check for PR #$pr"
+            sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr | jq -r '.head.sha')
+
+            suite_id=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-suites \
+              | jq -r '.check_suites[0].id')
+
+            echo "Re-requesting check suite $suite_id for PR #$pr ($sha)"
             curl -X POST \
               -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/actions/workflows/code-freeze.yml/dispatches \
-              -d "{\"ref\":\"refs/pull/$pr/head\"}"
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/check-suites/$suite_id/rerequest
           done

@@ -18,60 +18,31 @@ jobs:
             https://api.github.com/repos/vikas-wanchoo-devops/FlaskAPI-Docker-CICD/dispatches \
             -d '{"event_type":"freeze-updated"}'
 
-  recheck-open-prs:
+  rerun-pr-workflows:
     runs-on: ubuntu-latest
     steps:
-      - name: Install jq (if not present)
+      - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Re-request Code Freeze checks on open PRs
+      - name: Re-run PR workflows
         run: |
           repo="FlaskAPI-Docker-CICD"
 
-          echo "Fetching open PRs for $repo..."
+          echo "Fetching recent workflow runs..."
 
-          prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+          runs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
+            https://api.github.com/repos/vikas-wanchoo-devops/$repo/actions/runs \
+            | jq -r '.workflow_runs[]
+              | select(.event=="pull_request")
+              | select(.status=="completed")
+              | .id')
 
-          for pr in $prs; do
-            echo "--------------------------------------"
-            echo "Processing PR #$pr..."
+          for run in $runs; do
+            echo "Re-running workflow run ID: $run"
 
-            sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            curl -X POST \
+              -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr \
-              | jq -r '.head.sha')
-
-            echo "Latest SHA: $sha"
-
-            echo "Fetching check runs..."
-
-            check_run_id=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-              -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-runs \
-              | jq -r '.check_runs[]
-                | select(.name=="Code Freeze Check / check-freeze (pull_request)")
-                | sort_by(.created_at)
-                | last
-                | .id')
-
-            if [ -n "$check_run_id" ] && [ "$check_run_id" != "null" ]; then
-              echo "Re-running check-run $check_run_id for PR #$pr"
-
-              curl -X POST \
-                -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-                -H "Accept: application/vnd.github+json" \
-                https://api.github.com/repos/vikas-wanchoo-devops/$repo/check-runs/$check_run_id/rerequest
-
-            else
-              echo "No matching Code Freeze check found for PR #$pr"
-              echo "Available checks:"
-              
-              curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-                -H "Accept: application/vnd.github+json" \
-                https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-runs \
-                | jq -r '.check_runs[].name'
-            fi
-
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/actions/runs/$run/rerun
           done

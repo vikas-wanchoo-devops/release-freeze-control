@@ -24,16 +24,19 @@ jobs:
       - name: Re-trigger checks on open PRs
         run: |
           repo="FlaskAPI-Docker-CICD"
-          echo "Fetching open PRs for $repo"
           prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
 
           for pr in $prs; do
-            echo "Re-dispatching freeze check for PR #$pr in $repo"
+            echo "Re-requesting checks for PR #$pr in $repo"
+            sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr | jq -r '.head.sha')
+
             curl -X POST \
               -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               https://api.github.com/repos/vikas-wanchoo-devops/$repo/actions/workflows/code-freeze.yml/dispatches \
-              -d "{\"ref\":\"develop\"}"
+              -d "{\"ref\":\"$sha\"}"
           done

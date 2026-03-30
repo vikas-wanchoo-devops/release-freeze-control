@@ -20,16 +20,21 @@ jobs:
 
   rerun-pr-workflows:
     runs-on: ubuntu-latest
+    needs: notify   # ensures this runs after notify
     steps:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Wait for downstream workflows
+        run: |
+          echo "Sleeping for 30 seconds to allow downstream workflows to complete..."
+          sleep 30
 
       - name: Re-run PR workflows
         run: |
           repo="FlaskAPI-Docker-CICD"
 
           echo "Fetching recent workflow runs..."
-
           runs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/vikas-wanchoo-devops/$repo/actions/runs \
@@ -40,7 +45,6 @@ jobs:
 
           for run in $runs; do
             echo "Re-running workflow run ID: $run"
-
             curl -X POST \
               -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \

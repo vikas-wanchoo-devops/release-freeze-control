@@ -9,14 +9,21 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch freeze-updated event
+      - name: Dispatch freeze-updated event to all repos
         run: |
-          echo "Dispatching freeze-updated event to FlaskAPI-Docker-CICD..."
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/vikas-wanchoo-devops/FlaskAPI-Docker-CICD/dispatches \
-            -d '{"event_type":"freeze-updated"}'
+          repos=("FlaskAPI-Docker-CICD" \
+                 "Terraform-Azure-ContainerApp-CI-CD" \
+                 "FlaskAPI-Docker-Azure-CI-CD" \
+                 "Docker_Commands_Reference")
+
+          for repo in "${repos[@]}"; do
+            echo "Dispatching freeze-updated event to $repo..."
+            curl -X POST \
+              -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/dispatches \
+              -d '{"event_type":"freeze-updated"}'
+          done
 
   recheck-open-prs:
     runs-on: ubuntu-latest
@@ -32,29 +39,38 @@ jobs:
 
       - name: Re-request Code Freeze checks on open PRs
         run: |
-          repo="FlaskAPI-Docker-CICD"
-          prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
+          repos=("FlaskAPI-Docker-CICD" \
+                 "Terraform-Azure-ContainerApp-CI-CD" \
+                 "FlaskAPI-Docker-Azure-CI-CD" \
+                 "Docker_Commands_Reference")
 
-          for pr in $prs; do
-            echo "--------------------------------------"
-            echo "Processing PR #$pr..."
+          for repo in "${repos[@]}"; do
+            echo "======================================"
+            echo "Processing repository: $repo"
 
-            sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            prs=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr | jq -r '.head.sha')
+              https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls?state=open | jq -r '.[].number')
 
-            suites=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-              -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-suites \
-              | jq -r '.check_suites[].id')
+            for pr in $prs; do
+              echo "--------------------------------------"
+              echo "Processing PR #$pr in $repo..."
 
-            for suite_id in $suites; do
-              echo "Re-requesting check suite $suite_id for PR #$pr ($sha)"
-              curl -X POST \
-                -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              sha=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
                 -H "Accept: application/vnd.github+json" \
-                https://api.github.com/repos/vikas-wanchoo-devops/$repo/check-suites/$suite_id/rerequest
+                https://api.github.com/repos/vikas-wanchoo-devops/$repo/pulls/$pr | jq -r '.head.sha')
+
+              suites=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                https://api.github.com/repos/vikas-wanchoo-devops/$repo/commits/$sha/check-suites \
+                | jq -r '.check_suites[].id')
+
+              for suite_id in $suites; do
+                echo "Re-requesting check suite $suite_id for PR #$pr ($sha)"
+                curl -X POST \
+                  -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+                  -H "Accept: application/vnd.github+json" \
+                  https://api.github.com/repos/vikas-wanchoo-devops/$repo/check-suites/$suite_id/rerequest
+              done
             done
           done

@@ -1,9 +1,10 @@
 # 🛑 Release Freeze Control
 
 [![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD%20Pipeline-passing-brightgreen?cacheSeconds=60&timestamp=20260304)]()
-[![Code Freeze Check](https://img.shields.io/badge/Code%20Freeze%20Check-passing-brightgreen?cacheSeconds=60&timestamp=20260304)]()
+[![Freeze Dispatcher](https://img.shields.io/badge/Freeze%20Dispatcher-passing-brightgreen?cacheSeconds=60&timestamp=20260304)]()
 ![GitHub Repo stars](https://img.shields.io/github/stars/vikas-wanchoo-devops/release-freeze-control?style=social&cacheSeconds=60&timestamp=20260304)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green?cacheSeconds=60&timestamp=20260304)]()
+
 
 ---
 

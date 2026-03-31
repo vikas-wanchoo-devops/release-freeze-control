@@ -25,12 +25,12 @@ By updating a single JSON file (`code-freeze-config/freeze.json`), you can block
    - Flip `freeze_active` between `true` (block merges) and `false` (allow merges).
 
 2. **Notify Workflow**  
-   - A workflow in the central repo runs whenever `freeze.json` changes.  
+   - `.github/workflows/notify-freeze.yml` runs whenever `freeze.json` changes.  
    - It dispatches a `freeze-updated` event to downstream repos.  
    - Uses a loop over a repo list so you can scale to many repos without duplicating code.
 
 3. **Downstream Enforcement**  
-   - Each downstream repo has a workflow listening for `repository_dispatch`.  
+   - Each downstream repo has a `code-freeze.yml` workflow listening for `repository_dispatch`.  
    - If `freeze_active` is `true`, PRs are blocked with ❌.  
    - If `freeze_active` is `false`, PRs show ✅ and merges are allowed.
 
